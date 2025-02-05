@@ -103,9 +103,14 @@ async def main():
     # Initialize the client
     client = OpenRouterClient()
     
-    # Create a message that will require tool use
+    # Create a message that demonstrates multiple tool uses
     messages = [
-        Message(role="user", content="What time is it? Then create a file called 'time.txt' with the current time.")
+        Message(role="user", content="""
+        1. Get the current time
+        2. Create a file called 'current_time.txt' with that time
+        3. Read back the contents of the file to verify
+        4. Get the time in a different format (just the date)
+        """)
     ]
     
     while True:
@@ -143,9 +148,18 @@ async def main():
             continue
         
         # If no more tool calls, print the final response
+        print("\nFinal Response:")
         print(message['content'])
         break
 
 if __name__ == "__main__":
+    print("Starting Mini Council demo...")
+    print("This example will:")
+    print("1. Get the current time")
+    print("2. Save it to a file")
+    print("3. Read it back")
+    print("4. Get the time in a different format")
+    print("\nWatching the AI use tools to accomplish this...\n")
+    
     asyncio.run(main())
 
