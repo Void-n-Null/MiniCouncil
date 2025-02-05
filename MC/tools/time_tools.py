@@ -16,7 +16,6 @@ class GetTimeTool(BaseTool):
         """
         try:
             # First verify the format is valid by formatting current time
-            datetime.now().strftime(format)
             return datetime.now().strftime(format)
         except ValueError as e:
             return f"Error: Invalid datetime format - {str(e)}"

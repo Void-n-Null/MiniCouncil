@@ -71,8 +71,8 @@ async def test_get_time_tool():
         pytest.fail("Time string not in custom format")
     
     # Test invalid format
-    result = await tool.execute(format="invalid")
-    assert "Error" in result
+    result = await tool.execute(format="invalid%format")
+    assert "Error: Invalid datetime format" in result
 
 def test_tool_schemas():
     """Test that all tools have valid schemas."""
