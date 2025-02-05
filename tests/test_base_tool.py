@@ -8,7 +8,7 @@ class SimpleTestTool(BaseTool):
     name = "simple_test"
     description = "A tool for testing"
     
-    async def execute(self, text: str) -> str:
+    async def _execute(self, text: str) -> str:
         """Simple echo function."""
         return text
 
@@ -17,7 +17,7 @@ class ComplexTestTool(BaseTool):
     name = "complex_test"
     description = "A tool for testing complex parameters"
     
-    async def execute(self, required_param: str, optional_param: Optional[int] = 42) -> dict:
+    async def _execute(self, required_param: str, optional_param: Optional[int] = 42) -> dict:
         """Test function with optional parameters."""
         return {
             "required": required_param,
@@ -26,7 +26,7 @@ class ComplexTestTool(BaseTool):
 
 class NoNameTool(BaseTool):
     """A tool without an explicit name."""
-    async def execute(self, value: str) -> str:
+    async def _execute(self, value: str) -> str:
         return value
 
 def test_tool_name_and_description():

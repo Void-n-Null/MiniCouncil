@@ -7,7 +7,7 @@ class GetTimeTool(BaseTool):
     name = "get_current_time"
     description = "Get the current time in the specified format"
     
-    async def execute(self, format: str = "%Y-%m-%d %H:%M:%S") -> str:
+    async def _execute(self, format: str = "%Y-%m-%d %H:%M:%S") -> str:
         """
         Get the current time in the specified format.
         
@@ -15,6 +15,10 @@ class GetTimeTool(BaseTool):
             format: Optional datetime format string (default: "%Y-%m-%d %H:%M:%S")
         """
         try:
+            # First verify the format is valid by formatting current time
+            datetime.now().strftime(format)
             return datetime.now().strftime(format)
+        except ValueError as e:
+            return f"Error: Invalid datetime format - {str(e)}"
         except Exception as e:
-            return f"Error getting time: {str(e)}" 
+            return f"Error: {str(e)}" 

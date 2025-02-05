@@ -6,7 +6,7 @@ class ReadFileTool(BaseTool):
     name = "read_file"
     description = "Read the contents of a file at the specified path"
     
-    async def execute(self, path: str) -> str:
+    async def _execute(self, path: str) -> str:
         """
         Read and return the contents of a file.
         
@@ -24,7 +24,7 @@ class WriteFileTool(BaseTool):
     name = "write_file"
     description = "Write content to a file at the specified path"
     
-    async def execute(self, path: str, content: str) -> str:
+    async def _execute(self, path: str, content: str) -> str:
         """
         Write content to a file.
         
