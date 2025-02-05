@@ -1,13 +1,15 @@
 import os
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 import requests
 from dataclasses import dataclass
 
 @dataclass
 class Message:
     role: str
-    content: str
+    content: Optional[str]
     name: Optional[str] = None
+    tool_calls: Optional[List[Dict[str, Any]]] = None
+    tool_call_id: Optional[str] = None
 
 class OpenRouterClient:
     def __init__(self, api_key: str = None, site_url: str = None, site_name: str = None):
@@ -71,7 +73,9 @@ class OpenRouterClient:
             {
                 "role": msg.role,
                 "content": msg.content,
-                **({"name": msg.name} if msg.name else {})
+                **({"name": msg.name} if msg.name else {}),
+                **({"tool_calls": msg.tool_calls} if msg.tool_calls else {}),
+                **({"tool_call_id": msg.tool_call_id} if msg.tool_call_id else {})
             }
             for msg in messages
         ]
