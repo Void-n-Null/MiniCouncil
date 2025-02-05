@@ -1,9 +1,9 @@
 # Entry point for the Mini Council
 
 from MC.openrouter_client import OpenRouterClient, Message
+from MC.tools.registry import registry
 import json
-from datetime import datetime
-import os
+import asyncio
 
 def get_current_time():
     """Get the current time."""
@@ -79,7 +79,7 @@ TOOLS = [
     }
 ]
 
-def handle_tool_call(tool_call):
+async def handle_tool_call(tool_call):
     """Handle a tool call from the model."""
     function_name = tool_call['function']['name']
     try:
@@ -87,23 +87,19 @@ def handle_tool_call(tool_call):
     except json.JSONDecodeError:
         return f"Error: Invalid JSON in arguments for {function_name}"
     
-    # Map function names to actual functions
-    function_map = {
-        'get_current_time': get_current_time,
-        'read_file': read_file,
-        'write_file': write_file
-    }
-    
-    if function_name not in function_map:
-        return f"Error: Unknown function {function_name}"
-    
     try:
-        result = function_map[function_name](**arguments)
+        # Get the tool class from registry
+        tool_class = registry.get_tool(function_name)
+        # Create an instance and execute
+        tool = tool_class()
+        result = await tool.execute(**arguments)
         return json.dumps(result) if isinstance(result, dict) else str(result)
+    except KeyError:
+        return f"Error: Unknown function {function_name}"
     except Exception as e:
         return f"Error executing {function_name}: {str(e)}"
 
-def main():
+async def main():
     # Initialize the client
     client = OpenRouterClient()
     
@@ -116,8 +112,8 @@ def main():
         # Get completion from model with tools
         response = client.chat_completion(
             messages=messages,
-            model="openai/gpt-3.5-turbo",  # Changed to a model that better supports tool calls
-            tools=TOOLS,
+            model="openai/gpt-3.5-turbo",
+            tools=registry.get_tool_schemas(),
             temperature=0.7
         )
         
@@ -126,7 +122,7 @@ def main():
         # If the model wants to use tools
         if 'tool_calls' in message:
             for tool_call in message['tool_calls']:
-                result = handle_tool_call(tool_call)
+                result = await handle_tool_call(tool_call)
                 
                 # Add the tool call to messages
                 messages.append(Message(
@@ -140,7 +136,7 @@ def main():
                     role="tool",
                     content=result,
                     name=tool_call['function']['name'],
-                    tool_call_id=tool_call['id']  # Added tool_call_id as per docs
+                    tool_call_id=tool_call['id']
                 ))
             
             # Continue the conversation with the tool results
@@ -151,5 +147,5 @@ def main():
         break
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
 
