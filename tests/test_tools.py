@@ -70,8 +70,8 @@ async def test_get_time_tool():
     except ValueError:
         pytest.fail("Time string not in custom format")
     
-    # Test invalid format
-    result = await tool.execute(format="invalid%format")
+    # Test invalid format - use a format string that will definitely fail
+    result = await tool.execute(format="%Y-%m-%d %H:%M:%S %Q")  # %Q is not a valid directive
     assert "Error: Invalid datetime format" in result
 
 def test_tool_schemas():
