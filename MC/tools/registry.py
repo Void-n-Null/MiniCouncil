@@ -15,13 +15,13 @@ class ToolRegistry:
         if not issubclass(tool_class, BaseTool):
             raise ValueError(f"{tool_class.__name__} must inherit from BaseTool")
         
-        # Verify the tool has an execute method
-        if not hasattr(tool_class, 'execute'):
-            raise NotImplementedError(f"{tool_class.__name__} must implement execute method")
+        # Verify the tool has an _execute method
+        if not hasattr(tool_class, '_execute'):
+            raise NotImplementedError(f"{tool_class.__name__} must implement _execute method")
         
-        # Verify execute method is properly implemented (not just inherited)
-        if tool_class.execute == BaseTool.execute:
-            raise NotImplementedError(f"{tool_class.__name__} must implement its own execute method")
+        # Verify _execute method is properly implemented (not just inherited)
+        if tool_class._execute == BaseTool._execute:
+            raise NotImplementedError(f"{tool_class.__name__} must implement its own _execute method")
         
         tool_name = tool_class.name or tool_class.__name__.lower()
         self._tools[tool_name] = tool_class

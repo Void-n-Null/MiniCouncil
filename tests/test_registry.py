@@ -7,22 +7,22 @@ from MC.tools.registry import ToolRegistry
 # Example tools for testing
 class TestTool1(BaseTool):
     name = "test_tool_1"
-    description = "First test tool"
+    description = "A test tool"
     
-    async def execute(self, value: str) -> str:
-        return value
+    def _execute(self, **kwargs):
+        return "test_tool_1 executed"
 
 class TestTool2(BaseTool):
     name = "test_tool_2"
-    description = "Second test tool"
+    description = "Another test tool"
     
-    async def execute(self, value: int) -> int:
-        return value * 2
+    def _execute(self, **kwargs):
+        return "test_tool_2 executed"
 
 def test_registry_initialization():
     """Test that registry initializes properly."""
     registry = ToolRegistry()
-    assert len(registry._tools) == 0
+    assert registry._tools == {}
 
 def test_tool_registration():
     """Test that tools can be registered."""
@@ -30,8 +30,8 @@ def test_tool_registration():
     
     # Register a tool
     registry.register(TestTool1)
-    assert len(registry._tools) == 1
     assert "test_tool_1" in registry._tools
+    assert registry._tools["test_tool_1"] == TestTool1
     
     # Register another tool
     registry.register(TestTool2)
@@ -43,21 +43,25 @@ def test_duplicate_tool_registration():
     registry = ToolRegistry()
     
     class Tool1(BaseTool):
-        name = "same_name"
-        async def execute(self, value: str) -> str:
-            return value
+        name = "tool1"
+        description = "Tool 1"
+        
+        def _execute(self, **kwargs):
+            return "tool1 executed"
     
     class Tool2(BaseTool):
-        name = "same_name"
-        async def execute(self, value: int) -> int:
-            return value
+        name = "tool1"  # Same name as Tool1
+        description = "Tool 2"
+        
+        def _execute(self, **kwargs):
+            return "tool2 executed"
     
     registry.register(Tool1)
     registry.register(Tool2)
     assert len(registry._tools) == 1
     
     # Verify that the second registration overwrote the first
-    tool_class = registry.get_tool("same_name")
+    tool_class = registry.get_tool("tool1")
     assert tool_class == Tool2
 
 def test_get_tool():
@@ -71,7 +75,7 @@ def test_get_tool():
     
     # Test getting non-existent tool
     with pytest.raises(KeyError):
-        registry.get_tool("non_existent_tool")
+        registry.get_tool("nonexistent_tool")
 
 def test_get_all_tools():
     """Test getting all registered tools."""
@@ -115,8 +119,8 @@ class AutoDiscoveredTool(BaseTool):
     name = "auto_tool"
     description = "Automatically discovered tool"
     
-    async def execute(self, value: str) -> str:
-        return value
+    def _execute(self, **kwargs):
+        return "auto_tool executed"
 '''
     
     with open(tools_dir / "auto_tool.py", "w") as f:
