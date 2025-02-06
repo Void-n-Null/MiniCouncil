@@ -2,4 +2,5 @@ requests>=2.31.0
 python-dotenv>=1.0.0
 pydantic>=2.6.1
 pytest>=8.0.0
-pytest-asyncio>=0.23.5  # For testing async functions 
+pytest-asyncio>=0.23.5  # For testing async functions
+PyYAML>=6.0.1 
