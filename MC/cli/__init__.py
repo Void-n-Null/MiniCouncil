@@ -9,4 +9,8 @@ This directory contains:
 
 This module provides the command-line interface for the Mini Council package,
 allowing users to interact with the tools through the terminal.
-""" 
+"""
+
+from .cli import CLI
+
+__all__ = ['CLI'] 

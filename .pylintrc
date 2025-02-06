@@ -1,0 +1,50 @@
+[MASTER]
+# Add the root directory to the Python path
+init-hook='import sys; sys.path.append(".")'
+
+# Discover python modules
+recursive=yes
+
+# Files or directories to be skipped
+ignore=CVS,.git,__pycache__,venv
+
+[MESSAGES CONTROL]
+# Disable specific warnings
+disable=
+    C0103,  # invalid-name (for MC package)
+    C0303,  # trailing-whitespace
+    C0304,  # missing-final-newline
+    C0305,  # trailing-newlines
+    R0903,  # too-few-public-methods
+    W0611,  # unused-import (handled by other tools)
+    R0801,  # duplicate-code
+    W0221   # arguments-differ (for tool implementations)
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length=100
+
+# Maximum number of lines in a module
+max-module-lines=1000
+
+[BASIC]
+# Regular expression which should only match function or class names
+function-rgx=[a-z_][a-z0-9_]{2,50}$
+class-rgx=[A-Z_][a-zA-Z0-9_]+$
+argument-rgx=[a-z_][a-z0-9_]{2,30}$
+variable-rgx=[a-z_][a-z0-9_]{2,30}$
+
+# Good variable names
+good-names=i,j,k,ex,Run,_,id,f
+
+[SIMILARITIES]
+# Minimum lines number of a similarity
+min-similarity-lines=10
+
+[TYPECHECK]
+# List of module names for which member attributes should not be checked
+ignored-modules=numpy,tensorflow,torch,cv2
+
+[MISCELLANEOUS]
+# List of note tags to take into consideration
+notes=FIXME,TODO,XXX,HACK 

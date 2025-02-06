@@ -1,7 +1,16 @@
+"""Configuration Module - Handles application configuration and logging setup.
+
+This module provides functionality for:
+- Loading and managing logging configuration
+- Setting up logging handlers and formatters
+- Managing environment-based configuration
+- Ensuring log directories exist
+"""
+
 import os
-import yaml
 import logging.config
 from pathlib import Path
+import yaml
 
 def setup_logging(
     default_path='config/logging.yaml',
@@ -19,7 +28,7 @@ def setup_logging(
     path = Path(__file__).parent / path
 
     if path.exists():
-        with open(path, 'rt') as f:
+        with open(path, 'rt', encoding='utf-8') as f:
             try:
                 config = yaml.safe_load(f.read())
                 # Ensure log directories exist
@@ -29,7 +38,7 @@ def setup_logging(
                         log_dir.mkdir(parents=True, exist_ok=True)
                 
                 logging.config.dictConfig(config)
-            except Exception as e:
+            except (yaml.YAMLError, OSError) as e:
                 print(f'Error in logging configuration: {e}')
                 print('Using default logging configuration')
                 logging.basicConfig(level=default_level)

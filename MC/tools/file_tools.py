@@ -1,22 +1,46 @@
+"""File Tools Module - Tools for file operations.
+
+This module provides tools for:
+- Reading files in various modes
+- Writing and appending to files
+- Checking file existence and size
+- File path validation and safety
+"""
+
 import logging
+import os
 from typing import List, Optional, Union
 from ..core.base_tool import BaseTool
 from ..core.path_handler import PathHandler, PathValidationError
 from ..core.encoding import EncodingHandler
 from .file_modes import ReadMode, WriteMode
 
-# Note: Logging should be configured by the application, not here
+# Configure logger
 logger = logging.getLogger(__name__)
 
 class FileToolError(Exception):
     """Base class for file tool exceptions."""
-    pass
 
 class ReadFileTool(BaseTool):
+    """Tool for reading file contents in various modes.
+    
+    Supports:
+    - Reading entire file
+    - Reading specific number of bytes
+    - Reading lines
+    - Reading in chunks
+    """
     name = "read_file"
-    description = "Reads the contents of a file. Input should be a file path."
+    description = (
+        "Reads the contents of a file. Input should be a file path."
+    )
 
-    def __init__(self, chunk_size: int = 4096, encoding: str = 'utf-8', base_dir: Optional[str] = None):
+    def __init__(
+        self,
+        chunk_size: int = 4096,
+        encoding: str = 'utf-8',
+        base_dir: Optional[str] = None
+    ):
         """
         Initialize ReadFileTool.
         
@@ -49,8 +73,8 @@ class ReadFileTool(BaseTool):
         if isinstance(mode, str):
             try:
                 mode = ReadMode[mode.upper()]
-            except KeyError:
-                raise FileToolError(f"Invalid read mode: {mode}")
+            except KeyError as exc:
+                raise FileToolError(f"Invalid read mode: {mode}") from exc
 
         try:
             file_path = self.path_handler.validate_path(path)
@@ -59,11 +83,11 @@ class ReadFileTool(BaseTool):
                 if mode == ReadMode.READ_ALL:
                     f.seek(offset)
                     return f.read(num_bytes) if num_bytes else f.read()
-                    
-                elif mode == ReadMode.READ_LINES:
+                
+                if mode == ReadMode.READ_LINES:
                     return f.readlines()
-                    
-                elif mode == ReadMode.READ_CHUNKED:
+                
+                if mode == ReadMode.READ_CHUNKED:
                     f.seek(offset)
                     chunks = []
                     while True:
@@ -72,20 +96,36 @@ class ReadFileTool(BaseTool):
                             break
                         chunks.append(chunk)
                     return ''.join(chunks)
+                
+                raise FileToolError(f"Unsupported read mode: {mode}")
                     
-                else:
-                    raise FileToolError(f"Unsupported read mode: {mode}")
-                    
-        except PathValidationError as e:
-            raise FileToolError(str(e))
-        except Exception as e:
-            logger.error(f"Error reading file: {e}", exc_info=True)
-            raise FileToolError(f"Error reading file: {e}") from e
+        except FileNotFoundError as exc:
+            logger.error("File not found: %s", path)
+            raise FileToolError(f"File not found: {path}") from exc
+        except PermissionError as exc:
+            logger.error("Permission denied: %s", path)
+            raise FileToolError(f"Permission denied: {path}") from exc
+        except OSError as exc:
+            logger.error("OS error reading file: %s", exc)
+            raise FileToolError(f"Error reading file: {exc}") from exc
+        except (UnicodeError, LookupError) as exc:
+            logger.error("Encoding error reading file: %s", exc)
+            raise FileToolError(f"Encoding error reading file: {exc}") from exc
+        except Exception as exc:
+            logger.error("Unexpected error reading file: %s", exc, exc_info=True)
+            raise FileToolError(f"Error reading file: {exc}") from exc
 
 
 class WriteFileTool(BaseTool):
+    """Tool for writing content to files.
+    
+    Supports:
+    - Writing new files
+    - Appending to existing files
+    - Creating directories if needed
+    """
     name = "write_file"
-    description = "Writes content to a file. Input should be a file path and the content to write."
+    description = "Writes content to a file. Input should be a file path and content."
 
     def __init__(self, encoding: str = 'utf-8', base_dir: Optional[str] = None):
         """
@@ -116,8 +156,8 @@ class WriteFileTool(BaseTool):
         if isinstance(mode, str):
             try:
                 mode = WriteMode[mode.upper()]
-            except KeyError:
-                raise FileToolError(f"Invalid write mode: {mode}")
+            except KeyError as exc:
+                raise FileToolError(f"Invalid write mode: {mode}") from exc
 
         try:
             file_path = self.path_handler.validate_path(path)
@@ -127,14 +167,25 @@ class WriteFileTool(BaseTool):
                 f.write(content)
             return f"Successfully wrote to {file_path} in {mode.name.lower()} mode."
             
-        except PathValidationError as e:
-            raise FileToolError(str(e))
-        except Exception as e:
-            logger.error(f"Error writing to file: {e}", exc_info=True)
-            raise FileToolError(f"Error writing to file: {e}") from e
+        except PathValidationError as exc:
+            raise FileToolError(str(exc)) from exc
+        except PermissionError as exc:
+            logger.error("Permission denied: %s", path)
+            raise FileToolError(f"Permission denied: {path}") from exc
+        except OSError as exc:
+            logger.error("OS error writing to file: %s", exc)
+            raise FileToolError(f"Error writing to file: {exc}") from exc
+        except Exception as exc:
+            logger.error("Error writing to file: %s", exc, exc_info=True)
+            raise FileToolError(f"Error writing to file: {exc}") from exc
 
 
 class FileExistsTool(BaseTool):
+    """Tool for checking if a file exists.
+    
+    Returns True if the file exists and is accessible,
+    False otherwise.
+    """
     name = "file_exists"
     description = "Checks if a file exists. Input should be a file path."
 
@@ -153,16 +204,26 @@ class FileExistsTool(BaseTool):
         
         Args:
             path: Path to the file to check
+            
+        Returns:
+            True if file exists and is accessible, False otherwise
         """
         try:
             file_path = self.path_handler.validate_path(path)
             return PathHandler().get_size(file_path) >= 0
-        except Exception as e:
-            logger.error(f"Error checking file existence: {e}", exc_info=True)
+        except (PathValidationError, FileNotFoundError, PermissionError):
+            return False
+        except (OSError, IOError) as exc:
+            logger.error("Error checking file existence: %s", exc)
             return False
 
 
 class FileSizeTool(BaseTool):
+    """Tool for getting the size of a file in bytes.
+    
+    Raises FileToolError if the file doesn't exist or
+    is not accessible.
+    """
     name = "file_size"
     description = "Checks the size of a file in bytes. Input should be a file path."
 
@@ -181,11 +242,23 @@ class FileSizeTool(BaseTool):
         
         Args:
             path: Path to the file to check
+            
+        Returns:
+            Size in bytes
+            
+        Raises:
+            FileToolError: If file doesn't exist or is not accessible
         """
         try:
             return self.path_handler.get_size(path)
-        except PathValidationError as e:
-            raise FileToolError(str(e))
-        except Exception as e:
-            logger.error(f"Error checking file size: {e}", exc_info=True)
-            raise FileToolError(f"Error checking file size: {e}") from e 
+        except PathValidationError as exc:
+            raise FileToolError(str(exc)) from exc
+        except FileNotFoundError as exc:
+            logger.error("File not found: %s", path)
+            raise FileToolError(f"File not found: {path}") from exc
+        except PermissionError as exc:
+            logger.error("Permission denied: %s", path)
+            raise FileToolError(f"Permission denied: {path}") from exc
+        except (OSError, IOError) as exc:
+            logger.error("Error accessing file: %s", exc)
+            raise FileToolError(f"Error accessing file: {exc}") from exc 

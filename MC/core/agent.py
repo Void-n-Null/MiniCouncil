@@ -1,7 +1,16 @@
+"""Agent Module - Implements the AI agent that can use tools to accomplish tasks.
+
+This module provides the Agent class which is responsible for:
+- Managing conversations with the OpenRouter API
+- Coordinating tool execution
+- Maintaining conversation state
+- Processing responses and tool calls
+"""
+
 from typing import List, Dict, Any, Optional
-from .openrouter_client import OpenRouterClient, Message
-from .tools.registry import ToolRegistry
-from .tool_executor import ToolExecutor
+from ..api.openrouter_client import OpenRouterClient, Message, ChatConfig
+from .registry import ToolRegistry
+from ..handlers.tool_executor import ToolExecutor
 
 class Agent:
     """An AI agent that can use tools to accomplish tasks."""
@@ -74,12 +83,17 @@ class Agent:
             The agent's final response
         """
         while True:
+            # Create chat config
+            config = ChatConfig(
+                model=self.model,
+                temperature=temperature,
+                tools=self.registry.get_tool_schemas()
+            )
+            
             # Get completion from model with tools
             response = self.client.chat_completion(
                 messages=self.messages,
-                model=self.model,
-                tools=self.registry.get_tool_schemas(),
-                temperature=temperature
+                config=config
             )
             
             message = response['choices'][0]['message']

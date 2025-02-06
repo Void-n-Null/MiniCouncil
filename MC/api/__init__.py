@@ -9,4 +9,11 @@ This directory contains:
 
 All direct interaction with the OpenRouter API should be handled through
 classes and functions defined in this module.
-""" 
+"""
+
+from .openrouter_client import OpenRouterClient, Message
+
+__all__ = [
+    'OpenRouterClient',
+    'Message'
+] 

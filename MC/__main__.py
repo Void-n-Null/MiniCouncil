@@ -1,10 +1,18 @@
-# Entry point for the Mini Council
+"""Main Module - Entry point for the Mini Council application.
+
+This module:
+- Initializes the CLI and Agent components
+- Sets up the tool improvement process
+- Manages the main application flow
+- Handles user interaction
+"""
 
 import asyncio
 from .cli import CLI
-from .agent import Agent
+from .core.agent import Agent
 
 async def main():
+    """Run the main application loop."""
     # Initialize components
     cli = CLI()
     agent = Agent(
@@ -25,11 +33,7 @@ async def main():
     analysis_prompt = """
     1. Read the contents of 'MC/tools/file_tools.py'
     2. Analyze the current implementation of ReadFileTool and WriteFileTool
-    3. Create a file called 'tool_improvements.txt' with detailed recommendations for improvements, including:
-       - Error handling improvements
-       - New features that could be added
-       - Code organization improvements
-       - Performance optimizations
+    3. Create a file called 'tool_improvements.txt' with detailed recommendations for improvements
     4. Read back the recommendations
     5. Create a new file called 'improved_file_tools.py' with the improved implementation
     

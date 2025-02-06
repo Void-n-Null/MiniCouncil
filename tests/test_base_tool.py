@@ -1,6 +1,8 @@
+"""Tests for the base tool functionality."""
+
 import pytest
 from typing import Optional
-from MC.tools.base import BaseTool
+from MC.core.base_tool import BaseTool
 
 # Example tool classes for testing
 class SimpleTestTool(BaseTool):
@@ -29,7 +31,8 @@ class NoNameTool(BaseTool):
     async def _execute(self, value: str) -> str:
         return value
 
-def test_tool_name_and_description():
+@pytest.mark.asyncio
+async def test_tool_name_and_description():
     """Test that tool names and descriptions are properly set."""
     simple_tool = SimpleTestTool()
     assert simple_tool.name == "simple_test"
@@ -40,7 +43,8 @@ def test_tool_name_and_description():
     assert no_name_tool.name == "" # Default empty string
     assert NoNameTool.get_tool_schema()['function']['name'] == "nonametool"
 
-def test_parameter_schema_generation():
+@pytest.mark.asyncio
+async def test_parameter_schema_generation():
     """Test that parameter schemas are correctly generated."""
     # Test simple tool schema
     simple_schema = SimpleTestTool.get_parameter_schema()
@@ -58,7 +62,8 @@ def test_parameter_schema_generation():
     assert "required_param" in complex_schema["required"]
     assert "optional_param" not in complex_schema["required"]
 
-def test_tool_schema_format():
+@pytest.mark.asyncio
+async def test_tool_schema_format():
     """Test that the complete tool schema matches OpenRouter's format."""
     schema = SimpleTestTool.get_tool_schema()
     

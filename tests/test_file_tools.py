@@ -1,11 +1,16 @@
+"""Tests for the tool implementations."""
+
 import pytest
+import os
 from pathlib import Path
+from datetime import datetime
 from MC.tools.file_tools import (
     ReadFileTool, WriteFileTool, FileExistsTool, FileSizeTool,
     FileToolError
 )
 from MC.tools.file_modes import ReadMode, WriteMode
-from MC.tools.path_handler import PathValidationError
+from MC.core.path_handler import PathValidationError
+from MC.tools.time_tools import GetTimeTool
 
 @pytest.fixture
 def temp_file(tmp_path):
@@ -60,7 +65,7 @@ async def test_read_file_with_num_bytes(read_tool, temp_file):
 async def test_read_nonexistent_file(read_tool):
     with pytest.raises(FileToolError) as exc_info:
         await read_tool._execute("nonexistent.txt")
-    assert "No such file or directory" in str(exc_info.value)
+    assert "File not found: nonexistent.txt" in str(exc_info.value)
 
 @pytest.mark.asyncio
 async def test_read_invalid_mode(read_tool, temp_file):

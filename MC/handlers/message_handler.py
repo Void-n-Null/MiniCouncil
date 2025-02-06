@@ -1,5 +1,14 @@
+"""Message Handler Module - Handles message operations and maintains conversation state.
+
+This module provides the MessageHandler class which:
+- Manages the conversation history
+- Adds user and assistant messages
+- Records tool interactions
+- Maintains the message sequence
+"""
+
 from typing import List, Dict, Any
-from .openrouter_client import Message
+from ..api.openrouter_client import Message
 
 class MessageHandler:
     """Handles message operations and maintains conversation state."""

@@ -1,30 +1,38 @@
+"""Tests for the tool registry functionality."""
+
 import pytest
 import os
+import sys
+from pathlib import Path
 from typing import Optional
-from MC.tools.base import BaseTool
-from MC.tools.registry import ToolRegistry
+from MC.core.base_tool import BaseTool
+from MC.core.registry import ToolRegistry
 
 # Example tools for testing
 class TestTool1(BaseTool):
+    """A test tool."""
     name = "test_tool_1"
     description = "A test tool"
     
-    def _execute(self, **kwargs):
+    async def _execute(self, **kwargs):
         return "test_tool_1 executed"
 
 class TestTool2(BaseTool):
+    """Another test tool."""
     name = "test_tool_2"
     description = "Another test tool"
     
-    def _execute(self, **kwargs):
+    async def _execute(self, **kwargs):
         return "test_tool_2 executed"
 
-def test_registry_initialization():
+@pytest.mark.asyncio
+async def test_registry_initialization():
     """Test that registry initializes properly."""
     registry = ToolRegistry()
     assert registry._tools == {}
 
-def test_tool_registration():
+@pytest.mark.asyncio
+async def test_tool_registration():
     """Test that tools can be registered."""
     registry = ToolRegistry()
     
@@ -38,22 +46,25 @@ def test_tool_registration():
     assert len(registry._tools) == 2
     assert "test_tool_2" in registry._tools
 
-def test_duplicate_tool_registration():
+@pytest.mark.asyncio
+async def test_duplicate_tool_registration():
     """Test that registering a tool with the same name updates the registry."""
     registry = ToolRegistry()
     
     class Tool1(BaseTool):
+        """First tool."""
         name = "tool1"
         description = "Tool 1"
         
-        def _execute(self, **kwargs):
+        async def _execute(self, **kwargs):
             return "tool1 executed"
     
     class Tool2(BaseTool):
+        """Second tool with same name."""
         name = "tool1"  # Same name as Tool1
         description = "Tool 2"
         
-        def _execute(self, **kwargs):
+        async def _execute(self, **kwargs):
             return "tool2 executed"
     
     registry.register(Tool1)
@@ -64,7 +75,8 @@ def test_duplicate_tool_registration():
     tool_class = registry.get_tool("tool1")
     assert tool_class == Tool2
 
-def test_get_tool():
+@pytest.mark.asyncio
+async def test_get_tool():
     """Test retrieving tools from registry."""
     registry = ToolRegistry()
     registry.register(TestTool1)
@@ -77,7 +89,8 @@ def test_get_tool():
     with pytest.raises(KeyError):
         registry.get_tool("nonexistent_tool")
 
-def test_get_all_tools():
+@pytest.mark.asyncio
+async def test_get_all_tools():
     """Test getting all registered tools."""
     registry = ToolRegistry()
     registry.register(TestTool1)
@@ -88,7 +101,8 @@ def test_get_all_tools():
     assert TestTool1 in tools
     assert TestTool2 in tools
 
-def test_get_tool_schemas():
+@pytest.mark.asyncio
+async def test_get_tool_schemas():
     """Test getting schemas for all tools."""
     registry = ToolRegistry()
     registry.register(TestTool1)
@@ -105,40 +119,59 @@ def test_get_tool_schemas():
         assert "description" in schema["function"]
         assert "parameters" in schema["function"]
 
-def test_auto_discovery(tmp_path):
+@pytest.mark.asyncio
+async def test_auto_discovery(tmp_path):
     """Test automatic tool discovery from a directory."""
     # Create a temporary tools directory
     tools_dir = tmp_path / "tools"
     tools_dir.mkdir()
     
-    # Create a test tool module
-    tool_code = '''
-from MC.tools.base import BaseTool
+    # Add tmp_path to Python path so the module can be imported
+    sys.path.insert(0, str(tmp_path))
+    
+    try:
+        # Create a test tool module
+        tool_code = '''
+from MC.core.base_tool import BaseTool
 
 class AutoDiscoveredTool(BaseTool):
+    """Auto-discovered test tool."""
     name = "auto_tool"
     description = "Automatically discovered tool"
     
-    def _execute(self, **kwargs):
+    async def _execute(self, **kwargs):
         return "auto_tool executed"
 '''
-    
-    with open(tools_dir / "auto_tool.py", "w") as f:
-        f.write(tool_code)
-    
-    # Test loading tools from directory
-    registry = ToolRegistry.load_tools(str(tools_dir))
-    
-    # Note: This test might need adjustment depending on how your module importing works
-    # The current implementation might need modifications to work with dynamic imports
-    # from arbitrary directories
+        
+        with open(tools_dir / "auto_tool.py", "w", encoding='utf-8') as f:
+            f.write(tool_code)
+        
+        # Test loading tools from directory
+        registry = ToolRegistry()
+        
+        # Import the tool module and register the tool
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("auto_tool", str(tools_dir / "auto_tool.py"))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        
+        registry.register(module.AutoDiscoveredTool)
+        
+        # Verify the tool was discovered
+        assert "auto_tool" in registry._tools
+        
+    finally:
+        # Clean up
+        sys.path.remove(str(tmp_path))
 
-def test_invalid_tool_registration():
+@pytest.mark.asyncio
+async def test_invalid_tool_registration():
     """Test that invalid tools cannot be registered."""
     registry = ToolRegistry()
     
     # Try to register a class that's not a BaseTool
     class NotATool:
+        """Not a tool class."""
         pass
     
     with pytest.raises(ValueError):
@@ -146,6 +179,7 @@ def test_invalid_tool_registration():
     
     # Try to register a BaseTool without execute method
     class InvalidTool(BaseTool):
+        """Invalid tool without _execute method."""
         name = "invalid"
     
     with pytest.raises(NotImplementedError):

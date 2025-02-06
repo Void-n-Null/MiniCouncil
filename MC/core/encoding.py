@@ -1,3 +1,13 @@
+"""Encoding Module - Handles text encoding operations.
+
+This module provides:
+- Text encoding/decoding utilities
+- File encoding management
+- Encoding validation
+- Default encoding configuration
+- Encoding error handling
+"""
+
 from typing import Optional
 
 class EncodingHandler:

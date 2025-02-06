@@ -1,3 +1,12 @@
+"""File Modes Module - Defines enumerations for file operations.
+
+This module provides:
+- Read mode enumeration (READ_ALL, READ_LINES, READ_CHUNKED)
+- Write mode enumeration (WRITE, APPEND)
+- File mode string conversion
+- Mode validation utilities
+"""
+
 from enum import Enum, auto
 
 class ReadMode(Enum):

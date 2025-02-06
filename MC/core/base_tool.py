@@ -1,45 +1,75 @@
-from typing import Optional, Dict, Any, Type, get_type_hints, Union
-from pydantic import BaseModel, create_model, ValidationError
+"""Base Tool Module - Defines the base class for all tools.
+
+This module provides:
+- BaseTool abstract base class
+- Tool schema generation
+- Parameter validation
+- Execution interface
+- Common tool utilities
+"""
+
 import inspect
+from typing import Dict, Any, Optional, Type, get_type_hints, Union
+
+from pydantic import BaseModel, create_model, ValidationError
 
 class BaseTool:
-    """Base class for all tools."""
-    name: str = ""
-    description: str = ""
+    """Base class for all tools.
+    
+    All tools must inherit from this class and implement:
+    - name: Tool name (class attribute)
+    - description: Tool description (class attribute)
+    - _execute: Async method that implements the tool's functionality
+    
+    The class provides:
+    - Parameter validation
+    - Schema generation
+    - Execution interface
+    """
+    
+    name: str = ""  # Tool name (override in subclass)
+    description: str = ""  # Tool description (override in subclass)
     
     @classmethod
     def get_parameter_schema(cls) -> Dict[str, Any]:
-        """Generate JSON Schema for the tool's execute method parameters."""
-        # Get the execute method
-        execute_method = getattr(cls, '_execute', None)
-        if not execute_method:
-            raise NotImplementedError("Tool must implement _execute method")
+        """Get the parameter schema for this tool."""
+        # Get type hints for _execute method
+        hints = get_type_hints(cls._execute)
         
-        # Get type hints and signature
-        hints = get_type_hints(execute_method)
-        sig = inspect.signature(execute_method)
+        # Remove return annotation and self parameter
+        hints.pop('return', None)
+        hints.pop('self', None)
         
-        # Format for OpenRouter tool schema
+        # Create field definitions
         properties = {}
         required = []
         
-        for param_name, param in sig.parameters.items():
-            if param_name == 'self':  # Skip self parameter
-                continue
+        for name, type_hint in hints.items():
+            # Check if parameter is optional
+            is_optional = (
+                hasattr(type_hint, '__origin__') and 
+                type_hint.__origin__ is Union and 
+                type(None) in type_hint.__args__
+            )
             
-            param_type = hints.get(param_name, Any)
-            param_info = {
-                "type": cls._get_json_type(param_type),
-                "description": ""  # Could extract from docstring in future
-            }
-            
-            # Add default if present
-            if param.default is not param.empty:
-                param_info["default"] = param.default
+            # Get the actual type (unwrap Optional)
+            if is_optional:
+                field_type = next(t for t in type_hint.__args__ if t is not type(None))
             else:
-                required.append(param_name)
+                field_type = type_hint
+                required.append(name)
             
-            properties[param_name] = param_info
+            # Create field definition
+            field_def = {"type": cls._get_json_type(field_type)}
+            
+            # Add default if parameter has one
+            sig = inspect.signature(cls._execute)
+            if name in sig.parameters:
+                param = sig.parameters[name]
+                if param.default is not param.empty:
+                    field_def["default"] = param.default
+            
+            properties[name] = field_def
         
         return {
             "type": "object",
@@ -47,73 +77,61 @@ class BaseTool:
             "required": required
         }
     
+    @classmethod
+    def get_tool_schema(cls) -> Dict[str, Any]:
+        """Get the complete tool schema."""
+        return {
+            "type": "function",
+            "function": {
+                "name": cls.name or cls.__name__.lower(),
+                "description": cls.description,
+                "parameters": cls.get_parameter_schema()
+            }
+        }
+    
     @staticmethod
     def _get_json_type(python_type: Type) -> str:
-        """Convert Python types to JSON Schema types."""
-        # Handle Optional types
-        if getattr(python_type, "__origin__", None) == Union:
-            args = getattr(python_type, "__args__", ())
-            if type(None) in args:
-                # Get the non-None type
-                python_type = next(t for t in args if t != type(None))
-        
-        # Get the actual type
-        if hasattr(python_type, "__origin__"):
-            python_type = python_type.__origin__
-        
-        type_mapping = {
+        """Convert Python type to JSON schema type."""
+        type_map = {
             str: "string",
             int: "integer",
             float: "number",
             bool: "boolean",
             list: "array",
-            dict: "object",
-            Any: "string",  # Default to string for Any
+            dict: "object"
         }
-        
-        return type_mapping.get(python_type, "string")
-    
-    @classmethod
-    def get_tool_schema(cls) -> Dict[str, Any]:
-        """Get the complete tool schema for OpenRouter."""
-        return {
-            "type": "function",
-            "function": {
-                "name": cls.name or cls.__name__.lower(),
-                "description": cls.description or cls.__doc__ or "",
-                "parameters": cls.get_parameter_schema()
-            }
-        }
+        return type_map.get(python_type, "string")
     
     async def execute(self, **kwargs) -> Any:
-        """Execute the tool with the given parameters."""
-        # Get the parameter model for validation
-        hints = get_type_hints(self._execute)
-        sig = inspect.signature(self._execute)
+        """
+        Execute the tool with validation.
         
-        fields = {}
-        for param_name, param in sig.parameters.items():
-            if param_name == 'self':  # Skip self parameter
-                continue
+        Args:
+            **kwargs: Tool parameters
             
-            field_type = hints.get(param_name, Any)
-            default = ... if param.default == param.empty else param.default
-            fields[param_name] = (field_type, default)
-        
-        # Create a Pydantic model for parameters
-        param_model = create_model(f'{self.__class__.__name__}Parameters', **fields)
-        
+        Returns:
+            Tool execution result
+            
+        Raises:
+            TypeError: If parameters fail validation
+        """
         try:
+            # Create a model for validation
+            param_model = create_model(
+                'ToolParameters',
+                **{k: (v, ...) for k, v in get_type_hints(self._execute).items()}
+            )
             # Validate parameters
-            validated_params = param_model(**kwargs)
-            return await self._execute(**validated_params.model_dump())
-        except ValidationError as e:
-            raise TypeError(str(e))
+            param_model(**kwargs)
+            # Execute tool
+            return await self._execute(**kwargs)
+        except ValidationError as exc:
+            raise TypeError(str(exc)) from exc
     
     async def _execute(self, **kwargs) -> Any:
         """
-        Internal execute method that subclasses should implement.
-        This allows us to wrap the execute method with validation while keeping
-        the interface clean for subclasses.
+        Execute the tool's functionality.
+        
+        Must be implemented by subclasses.
         """
         raise NotImplementedError("Tool must implement _execute method") 

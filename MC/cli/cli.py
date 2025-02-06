@@ -1,3 +1,13 @@
+"""Command Line Interface Module - Handles CLI operations.
+
+This module provides:
+- Command-line interface implementation
+- User input/output handling
+- Terminal formatting and display
+- Command processing and execution
+- Interactive shell functionality
+"""
+
 class CLI:
     """Handles command-line interface concerns."""
     
