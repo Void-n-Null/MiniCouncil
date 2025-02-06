@@ -1,0 +1,38 @@
+import os
+import yaml
+import logging.config
+from pathlib import Path
+
+def setup_logging(
+    default_path='config/logging.yaml',
+    default_level=logging.INFO,
+    env_key='MC_LOG_CONFIG'
+):
+    """Setup logging configuration.
+    
+    Args:
+        default_path: Path to the logging configuration file
+        default_level: Default logging level if config file is not found
+        env_key: Environment variable that can override the config file path
+    """
+    path = os.getenv(env_key, default_path)
+    path = Path(__file__).parent / path
+
+    if path.exists():
+        with open(path, 'rt') as f:
+            try:
+                config = yaml.safe_load(f.read())
+                # Ensure log directories exist
+                for handler in config.get('handlers', {}).values():
+                    if 'filename' in handler:
+                        log_dir = Path(handler['filename']).parent
+                        log_dir.mkdir(parents=True, exist_ok=True)
+                
+                logging.config.dictConfig(config)
+            except Exception as e:
+                print(f'Error in logging configuration: {e}')
+                print('Using default logging configuration')
+                logging.basicConfig(level=default_level)
+    else:
+        logging.basicConfig(level=default_level)
+        print(f'Config file not found at {path}. Using default logging configuration') 
