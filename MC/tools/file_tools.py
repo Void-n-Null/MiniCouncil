@@ -1,8 +1,8 @@
 import logging
 from typing import List, Optional, Union
-from .base import BaseTool
-from .path_handler import PathHandler, PathValidationError
-from .encoding import EncodingHandler
+from ..core.base_tool import BaseTool
+from ..core.path_handler import PathHandler, PathValidationError
+from ..core.encoding import EncodingHandler
 from .file_modes import ReadMode, WriteMode
 
 # Note: Logging should be configured by the application, not here

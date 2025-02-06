@@ -1,4 +1,14 @@
-"""Mini Council - A Python package for easy interaction with OpenRouter API"""
+"""Mini Council - A Python package for easy interaction with OpenRouter API
+
+Directory Structure:
+- MC/
+  ├── api/          # API client and related functionality
+  ├── core/         # Core application logic and base classes
+  ├── tools/        # Tool implementations and utilities
+  ├── config/       # Configuration and settings
+  ├── handlers/     # Message and tool execution handlers
+  └── cli/          # Command-line interface components
+"""
 
 import os
 from dotenv import load_dotenv
